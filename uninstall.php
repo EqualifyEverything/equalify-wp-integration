@@ -29,3 +29,16 @@
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
+
+if ( is_multisite() ) {
+	$sites = get_sites( [ 'number' => 0, 'fields' => 'ids' ] );
+	foreach ( $sites as $site_id ) {
+		switch_to_blog( $site_id );
+		delete_option( 'equalify_disabled_urls' );
+		delete_option( 'equalify_include_pdfs' );
+		restore_current_blog();
+	}
+} else {
+	delete_option( 'equalify_disabled_urls' );
+	delete_option( 'equalify_include_pdfs' );
+}
