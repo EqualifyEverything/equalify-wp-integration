@@ -1,25 +1,29 @@
 <?php
 /**
- * Admin display partial for the Equalify URL Feed settings page.
+ * Admin display partial for the Equalify Integration settings page.
  *
  * Variables available from the calling method:
+ *   $logo_url      (string)  — absolute URL to logo.svg
  *   $feed_url      (string)  — public CSV feed URL
  *   $include_pdfs  (bool)    — whether PDF media library files are included
  *   $all_urls      (array)   — all site URLs with 'url' and 'type' keys
  *   $disabled_urls (array)   — URLs currently excluded from the feed
  *   $page_urls     (array)   — subset of $all_urls for the current page
+ *   $search        (string)  — current search query (empty string if none)
  *   $current_page  (int)
  *   $total_pages   (int)
- *   $total         (int)     — total number of URLs
+ *   $total         (int)     — number of URLs after search filtering
+ *   $total_all     (int)     — unfiltered total number of URLs in the feed
  *   $per_page      (int)
  *
  * @package    Equalify_Wp_Integration
  * @subpackage Equalify_Wp_Integration/admin/partials
  */
 ?>
-<div class="wrap" id="equalify-url-feed-page">
+<div class="wrap" id="equalify-integration-page">
 
-	<h1><?php esc_html_e( 'Equalify URL Feed', 'equalify-wp-integration' ); ?></h1>
+	<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php esc_attr_e( 'Equalify', 'equalify-wp-integration' ); ?>" style="max-width:220px;display:block;margin:12px 0 4px;" />
+	<h1 class="screen-reader-text"><?php esc_html_e( 'Equalify Integration', 'equalify-wp-integration' ); ?></h1>
 
 	<!-- CSV Feed URL -->
 	<div class="equalify-feed-url-box card" style="max-width:800px;padding:16px 20px;margin-top:16px;">
@@ -72,17 +76,44 @@
 	<!-- URL Table -->
 	<h2 style="margin-top:28px;">
 		<?php
-		$start = ( $current_page - 1 ) * $per_page + 1;
+		$start = $total > 0 ? ( $current_page - 1 ) * $per_page + 1 : 0;
 		$end   = min( $current_page * $per_page, $total );
-		printf(
-			/* translators: 1: start, 2: end, 3: total */
-			esc_html__( 'URLs in Feed (%1$d–%2$d of %3$d)', 'equalify-wp-integration' ),
-			$start,
-			$end,
-			$total
-		);
+		if ( $search !== '' ) {
+			printf(
+				/* translators: 1: start, 2: end, 3: filtered total, 4: search query, 5: unfiltered total */
+				esc_html__( 'URLs in Feed (%1$d–%2$d of %3$d matching "%4$s", %5$d total)', 'equalify-wp-integration' ),
+				$start, $end, $total, esc_html( $search ), $total_all
+			);
+		} else {
+			printf(
+				/* translators: 1: start, 2: end, 3: total */
+				esc_html__( 'URLs in Feed (%1$d–%2$d of %3$d)', 'equalify-wp-integration' ),
+				$start, $end, $total
+			);
+		}
 		?>
 	</h2>
+
+	<!-- Search -->
+	<form method="get" action="<?php echo esc_url( admin_url( 'options-general.php' ) ); ?>" style="margin-bottom:12px;">
+		<input type="hidden" name="page" value="equalify-integration" />
+		<div style="display:flex;gap:6px;align-items:center;max-width:900px;">
+			<input
+				type="search"
+				name="s"
+				value="<?php echo esc_attr( $search ); ?>"
+				placeholder="<?php esc_attr_e( 'Search URLs…', 'equalify-wp-integration' ); ?>"
+				class="regular-text"
+				style="flex:1;"
+			/>
+			<?php submit_button( __( 'Search', 'equalify-wp-integration' ), 'secondary', '', false ); ?>
+			<?php if ( $search !== '' ) : ?>
+				<a href="<?php echo esc_url( add_query_arg( 'page', 'equalify-integration', admin_url( 'options-general.php' ) ) ); ?>" class="button">
+					<?php esc_html_e( 'Clear', 'equalify-wp-integration' ); ?>
+				</a>
+			<?php endif; ?>
+		</div>
+	</form>
 
 	<?php if ( empty( $all_urls ) ) : ?>
 		<p><?php esc_html_e( 'No published URLs found on this site.', 'equalify-wp-integration' ); ?></p>
@@ -122,6 +153,7 @@
 							<input type="hidden" name="url" value="<?php echo esc_attr( $item['url'] ); ?>" />
 							<input type="hidden" name="toggle_action" value="<?php echo $is_disabled ? 'enable' : 'disable'; ?>" />
 							<input type="hidden" name="paged" value="<?php echo esc_attr( $current_page ); ?>" />
+							<input type="hidden" name="s" value="<?php echo esc_attr( $search ); ?>" />
 							<button type="submit" class="button button-small">
 								<?php echo $is_disabled
 									? esc_html__( 'Enable', 'equalify-wp-integration' )
@@ -139,19 +171,30 @@
 		<div class="tablenav" style="max-width:900px;">
 			<div class="tablenav-pages" style="float:none;margin-top:8px;">
 				<?php
-				$base_url = add_query_arg( 'page', 'equalify-url-feed', admin_url( 'options-general.php' ) );
+				$base_args = [ 'page' => 'equalify-integration' ];
+				if ( $search !== '' ) {
+					$base_args['s'] = $search;
+				}
+				$base_url = add_query_arg( $base_args, admin_url( 'options-general.php' ) );
+
+				$paged_url = fn( $p ) => esc_url( add_query_arg( 'paged', $p, $base_url ) );
+
+				// First
+				if ( $current_page > 1 ) {
+					printf( '<a class="button" href="%s">&laquo;&laquo; %s</a> ', $paged_url( 1 ), esc_html__( 'First', 'equalify-wp-integration' ) );
+				} else {
+					printf( '<span class="button" disabled aria-disabled="true">&laquo;&laquo; %s</span> ', esc_html__( 'First', 'equalify-wp-integration' ) );
+				}
 
 				// Previous
 				if ( $current_page > 1 ) {
-					printf(
-						'<a class="button" href="%s">&laquo; %s</a> ',
-						esc_url( add_query_arg( 'paged', $current_page - 1, $base_url ) ),
-						esc_html__( 'Previous', 'equalify-wp-integration' )
-					);
+					printf( '<a class="button" href="%s">&laquo; %s</a> ', $paged_url( $current_page - 1 ), esc_html__( 'Previous', 'equalify-wp-integration' ) );
+				} else {
+					printf( '<span class="button" disabled aria-disabled="true">&laquo; %s</span> ', esc_html__( 'Previous', 'equalify-wp-integration' ) );
 				}
 
-				// Page numbers (show up to 10 around current page)
-				$range = 4;
+				// Page numbers (up to 9 around current page)
+				$range   = 4;
 				$p_start = max( 1, $current_page - $range );
 				$p_end   = min( $total_pages, $current_page + $range );
 
@@ -159,21 +202,22 @@
 					if ( $p === $current_page ) {
 						printf( '<span class="button button-primary" style="cursor:default;">%d</span> ', $p );
 					} else {
-						printf(
-							'<a class="button" href="%s">%d</a> ',
-							esc_url( add_query_arg( 'paged', $p, $base_url ) ),
-							$p
-						);
+						printf( '<a class="button" href="%s">%d</a> ', $paged_url( $p ), $p );
 					}
 				}
 
 				// Next
 				if ( $current_page < $total_pages ) {
-					printf(
-						'<a class="button" href="%s">%s &raquo;</a>',
-						esc_url( add_query_arg( 'paged', $current_page + 1, $base_url ) ),
-						esc_html__( 'Next', 'equalify-wp-integration' )
-					);
+					printf( '<a class="button" href="%s">%s &raquo;</a> ', $paged_url( $current_page + 1 ), esc_html__( 'Next', 'equalify-wp-integration' ) );
+				} else {
+					printf( '<span class="button" disabled aria-disabled="true">%s &raquo;</span> ', esc_html__( 'Next', 'equalify-wp-integration' ) );
+				}
+
+				// Last
+				if ( $current_page < $total_pages ) {
+					printf( '<a class="button" href="%s">%s &raquo;&raquo;</a>', $paged_url( $total_pages ), esc_html__( 'Last', 'equalify-wp-integration' ) );
+				} else {
+					printf( '<span class="button" disabled aria-disabled="true">%s &raquo;&raquo;</span>', esc_html__( 'Last', 'equalify-wp-integration' ) );
 				}
 				?>
 			</div>

@@ -83,7 +83,7 @@ class Equalify_Wp_Integration_Public {
 		}
 
 		$disabled_urls = get_option( 'equalify_disabled_urls', [] );
-		$include_pdfs  = (bool) get_option( 'equalify_include_pdfs', true );
+		$include_pdfs  = (bool) get_option( 'equalify_include_pdfs', 1 );
 		$all_urls      = Equalify_Wp_Integration_URLs::get_all( $include_pdfs );
 
 		header( 'Content-Type: text/csv; charset=utf-8' );

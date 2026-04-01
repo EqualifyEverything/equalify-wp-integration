@@ -17,7 +17,7 @@ class Equalify_Wp_Integration_URLs {
 	 * @param    bool    $include_pdfs    Whether to include PDF files from the media library.
 	 * @return   array
 	 */
-	public static function get_all( $include_pdfs = true ) {
+	public static function get_all( $include_pdfs = 1 ) {
 		$urls = [];
 
 		// All published posts, pages, and public custom post types.

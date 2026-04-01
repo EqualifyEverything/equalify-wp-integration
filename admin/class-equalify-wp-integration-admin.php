@@ -13,7 +13,7 @@
 /**
  * The admin-specific functionality of the plugin.
  *
- * Registers the Settings > Equalify URL Feed admin page, handles URL
+ * Registers the Settings > Equalify Integration admin page, handles URL
  * enable/disable toggling, and enqueues admin assets.
  *
  * @package    Equalify_Wp_Integration
@@ -68,10 +68,10 @@ class Equalify_Wp_Integration_Admin {
 	 */
 	public function add_plugin_admin_menu() {
 		add_options_page(
-			__( 'Equalify URL Feed', 'equalify-wp-integration' ),
-			__( 'Equalify URL Feed', 'equalify-wp-integration' ),
+			__( 'Equalify Integration', 'equalify-wp-integration' ),
+			__( 'Equalify Integration', 'equalify-wp-integration' ),
 			'manage_options',
-			'equalify-url-feed',
+			'equalify-integration',
 			[ $this, 'display_plugin_admin_page' ]
 		);
 	}
@@ -86,9 +86,18 @@ class Equalify_Wp_Integration_Admin {
 			return;
 		}
 
-		$include_pdfs  = (bool) get_option( 'equalify_include_pdfs', true );
+		$include_pdfs  = (bool) get_option( 'equalify_include_pdfs', 1 );
 		$all_urls      = Equalify_Wp_Integration_URLs::get_all( $include_pdfs );
 		$disabled_urls = get_option( 'equalify_disabled_urls', [] );
+		$search        = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		$total_all     = count( $all_urls );
+
+		if ( $search !== '' ) {
+			$all_urls = array_values(
+				array_filter( $all_urls, fn( $item ) => str_contains( strtolower( $item['url'] ), strtolower( $search ) ) )
+			);
+		}
+
 		$total         = count( $all_urls );
 		$current_page  = max( 1, intval( $_GET['paged'] ?? 1 ) );
 		$per_page      = self::URLS_PER_PAGE;
@@ -97,6 +106,7 @@ class Equalify_Wp_Integration_Admin {
 		$offset        = ( $current_page - 1 ) * $per_page;
 		$page_urls     = array_slice( $all_urls, $offset, $per_page );
 		$feed_url      = Equalify_Wp_Integration_Public::get_feed_url();
+		$logo_url      = trailingslashit( dirname( plugin_dir_url( __FILE__ ) ) ) . 'logo.svg';
 
 		include plugin_dir_path( __FILE__ ) . 'partials/equalify-wp-integration-admin-display.php';
 	}
@@ -115,11 +125,11 @@ class Equalify_Wp_Integration_Admin {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'equalify-wp-integration' ) );
 		}
 
-		update_option( 'equalify_include_pdfs', isset( $_POST['include_pdfs'] ) ? true : false );
+		update_option( 'equalify_include_pdfs', isset( $_POST['include_pdfs'] ) ? 1 : 0 );
 
 		wp_safe_redirect(
 			add_query_arg(
-				[ 'page' => 'equalify-url-feed' ],
+				[ 'page' => 'equalify-integration' ],
 				admin_url( 'options-general.php' )
 			)
 		);
@@ -143,6 +153,7 @@ class Equalify_Wp_Integration_Admin {
 		$url           = isset( $_POST['url'] ) ? esc_url_raw( wp_unslash( $_POST['url'] ) ) : '';
 		$toggle_action = isset( $_POST['toggle_action'] ) ? sanitize_text_field( wp_unslash( $_POST['toggle_action'] ) ) : '';
 		$paged         = max( 1, intval( $_POST['paged'] ?? 1 ) );
+		$search        = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
 
 		if ( $url ) {
 			$disabled_urls = get_option( 'equalify_disabled_urls', [] );
@@ -158,15 +169,12 @@ class Equalify_Wp_Integration_Admin {
 			update_option( 'equalify_disabled_urls', $disabled_urls );
 		}
 
-		wp_safe_redirect(
-			add_query_arg(
-				[
-					'page'  => 'equalify-url-feed',
-					'paged' => $paged,
-				],
-				admin_url( 'options-general.php' )
-			)
-		);
+		$redirect_args = [ 'page' => 'equalify-integration', 'paged' => $paged ];
+		if ( $search !== '' ) {
+			$redirect_args['s'] = $search;
+		}
+
+		wp_safe_redirect( add_query_arg( $redirect_args, admin_url( 'options-general.php' ) ) );
 		exit;
 	}
 }
