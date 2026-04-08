@@ -41,9 +41,9 @@ define( 'EQUALIFY_WP_INTEGRATION_VERSION', '1.0.0' );
  * The code that runs during plugin activation.
  * This action is documented in includes/class-equalify-wp-integration-activator.php
  */
-function activate_equalify_wp_integration() {
+function activate_equalify_wp_integration( $network_wide ) {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-equalify-wp-integration-activator.php';
-	Equalify_Wp_Integration_Activator::activate();
+	Equalify_Wp_Integration_Activator::activate( $network_wide );
 }
 
 /**

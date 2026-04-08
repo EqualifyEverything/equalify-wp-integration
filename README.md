@@ -77,7 +77,7 @@ On the settings page, check the **Include direct file URLs of PDF files in the m
 - URL table now includes a search box; heading shows match count alongside total.
 - Pagination gains First and Last buttons.
 - Plugin CSS and JS now load only on the Equalify Integration settings screen.
-- Multisite: plugin options and cache are scoped per subsite; uninstall cleans up all subsites.
+- Multisite: each subsite gets its own token on network activation and when new sites are created; plugin options and cache are scoped per subsite; uninstall cleans up all subsites.
 
 ### 1.0.0
 

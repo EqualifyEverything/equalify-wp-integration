@@ -29,9 +29,30 @@ class Equalify_Wp_Integration_Activator {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function activate() {
-		// Generate a secret token the first time the plugin is activated.
-		// Skip if one already exists so reactivation doesn't invalidate existing feed URLs.
+	/**
+	 * Generates a secret token for each site that doesn't already have one.
+	 * When network-activated, seeds all existing sites in one pass.
+	 *
+	 * @param bool $network_wide True when activated network-wide in multisite.
+	 */
+	public static function activate( $network_wide = false ) {
+		if ( $network_wide && is_multisite() ) {
+			$sites = get_sites( [ 'number' => 0, 'fields' => 'ids' ] );
+			foreach ( $sites as $site_id ) {
+				switch_to_blog( $site_id );
+				self::ensure_token();
+				restore_current_blog();
+			}
+		} else {
+			self::ensure_token();
+		}
+	}
+
+	/**
+	 * Generates and stores a token for the current site if one doesn't exist.
+	 * Safe to call multiple times — never overwrites an existing token.
+	 */
+	public static function ensure_token() {
 		if ( ! get_option( 'equalify_csv_token' ) ) {
 			update_option( 'equalify_csv_token', bin2hex( random_bytes( 32 ) ) );
 		}

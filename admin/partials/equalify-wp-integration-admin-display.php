@@ -101,7 +101,7 @@
 				type="search"
 				name="s"
 				value="<?php echo esc_attr( $search ); ?>"
-				placeholder="<?php esc_attr_e( 'Search URLs…', 'equalify-wp-integration' ); ?>"
+				placeholder="<?php esc_attr_e( 'Search URLs by slug…', 'equalify-wp-integration' ); ?>"
 				class="regular-text"
 				style="flex:1;"
 			/>

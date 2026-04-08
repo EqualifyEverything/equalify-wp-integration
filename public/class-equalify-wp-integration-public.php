@@ -122,6 +122,12 @@ class Equalify_Wp_Integration_Public {
 	 * @return   string
 	 */
 	public static function get_feed_url() {
+		// Generate a token on demand for sites that existed before the plugin
+		// was network-activated and therefore never ran activate().
+		if ( ! get_option( 'equalify_csv_token' ) ) {
+			update_option( 'equalify_csv_token', bin2hex( random_bytes( 32 ) ) );
+		}
+
 		return add_query_arg(
 			[
 				'equalify_csv'   => '1',

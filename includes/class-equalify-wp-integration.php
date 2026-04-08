@@ -79,6 +79,7 @@ class Equalify_Wp_Integration {
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 		$this->define_cache_hooks();
+		$this->define_multisite_hooks();
 
 	}
 
@@ -193,6 +194,23 @@ class Equalify_Wp_Integration {
 	 * @since    1.0.0
 	 * @access   private
 	 */
+	/**
+	 * When a new site is created in a multisite network, ensure it gets its own token.
+	 * Hooked to wp_initialize_site, which fires after the site's options table is ready.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function define_multisite_hooks() {
+		if ( is_multisite() ) {
+			add_action( 'wp_initialize_site', function( $new_site ) {
+				switch_to_blog( $new_site->blog_id );
+				Equalify_Wp_Integration_Activator::ensure_token();
+				restore_current_blog();
+			} );
+		}
+	}
+
 	private function define_cache_hooks() {
 		// Any post saved, updated, trashed, or status-changed.
 		add_action( 'save_post',    [ 'Equalify_Wp_Integration_URLs', 'flush_cache' ] );
