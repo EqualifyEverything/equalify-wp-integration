@@ -30,7 +30,11 @@ class Equalify_Wp_Integration_Activator {
 	 * @since    1.0.0
 	 */
 	public static function activate() {
-
+		// Generate a secret token the first time the plugin is activated.
+		// Skip if one already exists so reactivation doesn't invalidate existing feed URLs.
+		if ( ! get_option( 'equalify_csv_token' ) ) {
+			update_option( 'equalify_csv_token', bin2hex( random_bytes( 32 ) ) );
+		}
 	}
 
 }

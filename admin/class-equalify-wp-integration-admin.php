@@ -48,7 +48,10 @@ class Equalify_Wp_Integration_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_styles() {
+	public function enqueue_styles( $hook_suffix ) {
+		if ( 'settings_page_equalify-integration' !== $hook_suffix ) {
+			return;
+		}
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/equalify-wp-integration-admin.css', array(), $this->version, 'all' );
 	}
 
@@ -57,7 +60,10 @@ class Equalify_Wp_Integration_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_scripts() {
+	public function enqueue_scripts( $hook_suffix ) {
+		if ( 'settings_page_equalify-integration' !== $hook_suffix ) {
+			return;
+		}
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/equalify-wp-integration-admin.js', array( 'jquery' ), $this->version, false );
 	}
 
@@ -87,24 +93,18 @@ class Equalify_Wp_Integration_Admin {
 		}
 
 		$include_pdfs  = (bool) get_option( 'equalify_include_pdfs', 1 );
-		$all_urls      = Equalify_Wp_Integration_URLs::get_all( $include_pdfs );
-		$disabled_urls = get_option( 'equalify_disabled_urls', [] );
+		$disabled_ids  = get_option( 'equalify_disabled_ids', [] );
 		$search        = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
-		$total_all     = count( $all_urls );
-
-		if ( $search !== '' ) {
-			$all_urls = array_values(
-				array_filter( $all_urls, fn( $item ) => str_contains( strtolower( $item['url'] ), strtolower( $search ) ) )
-			);
-		}
-
-		$total         = count( $all_urls );
 		$current_page  = max( 1, intval( $_GET['paged'] ?? 1 ) );
 		$per_page      = self::URLS_PER_PAGE;
+
+		$result        = Equalify_Wp_Integration_URLs::get_paged( $include_pdfs, $per_page, $current_page, $search );
+		$page_urls     = $result['urls'];
+		$total         = $result['total'];
+		$total_all     = $result['total_all'];
+
 		$total_pages   = max( 1, (int) ceil( $total / $per_page ) );
 		$current_page  = min( $current_page, $total_pages );
-		$offset        = ( $current_page - 1 ) * $per_page;
-		$page_urls     = array_slice( $all_urls, $offset, $per_page );
 		$feed_url      = Equalify_Wp_Integration_Public::get_feed_url();
 		$logo_url      = trailingslashit( dirname( plugin_dir_url( __FILE__ ) ) ) . 'logo.svg';
 
@@ -150,23 +150,23 @@ class Equalify_Wp_Integration_Admin {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'equalify-wp-integration' ) );
 		}
 
-		$url           = isset( $_POST['url'] ) ? esc_url_raw( wp_unslash( $_POST['url'] ) ) : '';
+		$post_id       = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$toggle_action = isset( $_POST['toggle_action'] ) ? sanitize_text_field( wp_unslash( $_POST['toggle_action'] ) ) : '';
 		$paged         = max( 1, intval( $_POST['paged'] ?? 1 ) );
 		$search        = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
 
-		if ( $url ) {
-			$disabled_urls = get_option( 'equalify_disabled_urls', [] );
+		if ( $post_id ) {
+			$disabled_ids = get_option( 'equalify_disabled_ids', [] );
 
 			if ( 'disable' === $toggle_action ) {
-				if ( ! in_array( $url, $disabled_urls, true ) ) {
-					$disabled_urls[] = $url;
+				if ( ! in_array( $post_id, $disabled_ids, true ) ) {
+					$disabled_ids[] = $post_id;
 				}
 			} elseif ( 'enable' === $toggle_action ) {
-				$disabled_urls = array_values( array_filter( $disabled_urls, fn( $u ) => $u !== $url ) );
+				$disabled_ids = array_values( array_filter( $disabled_ids, fn( $id ) => $id !== $post_id ) );
 			}
 
-			update_option( 'equalify_disabled_urls', $disabled_urls );
+			update_option( 'equalify_disabled_ids', $disabled_ids );
 		}
 
 		$redirect_args = [ 'page' => 'equalify-integration', 'paged' => $paged ];

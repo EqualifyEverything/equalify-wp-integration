@@ -34,11 +34,15 @@ if ( is_multisite() ) {
 	$sites = get_sites( [ 'number' => 0, 'fields' => 'ids' ] );
 	foreach ( $sites as $site_id ) {
 		switch_to_blog( $site_id );
-		delete_option( 'equalify_disabled_urls' );
+		delete_option( 'equalify_disabled_ids' );
+		delete_option( 'equalify_disabled_urls' ); // Legacy: remove if present from older installs.
 		delete_option( 'equalify_include_pdfs' );
+		delete_option( 'equalify_csv_token' );
 		restore_current_blog();
 	}
 } else {
-	delete_option( 'equalify_disabled_urls' );
+	delete_option( 'equalify_disabled_ids' );
+	delete_option( 'equalify_disabled_urls' ); // Legacy: remove if present from older installs.
 	delete_option( 'equalify_include_pdfs' );
+	delete_option( 'equalify_csv_token' );
 }

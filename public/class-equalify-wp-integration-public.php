@@ -82,9 +82,16 @@ class Equalify_Wp_Integration_Public {
 			return;
 		}
 
-		$disabled_urls = get_option( 'equalify_disabled_urls', [] );
-		$include_pdfs  = (bool) get_option( 'equalify_include_pdfs', 1 );
-		$all_urls      = Equalify_Wp_Integration_URLs::get_all( $include_pdfs );
+		$token = get_option( 'equalify_csv_token', '' );
+		$provided = isset( $_GET['equalify_token'] ) ? sanitize_text_field( wp_unslash( $_GET['equalify_token'] ) ) : '';
+
+		if ( ! $token || ! hash_equals( $token, $provided ) ) {
+			status_header( 403 );
+			exit;
+		}
+
+		$disabled_ids = get_option( 'equalify_disabled_ids', [] );
+		$include_pdfs = (bool) get_option( 'equalify_include_pdfs', 1 );
 
 		header( 'Content-Type: text/csv; charset=utf-8' );
 		header( 'Content-Disposition: inline; filename="equalify-urls.csv"' );
@@ -95,11 +102,14 @@ class Equalify_Wp_Integration_Public {
 		$output = fopen( 'php://output', 'w' );
 		fputcsv( $output, [ 'url', 'type' ] );
 
-		foreach ( $all_urls as $item ) {
-			if ( ! in_array( $item['url'], $disabled_urls, true ) ) {
-				fputcsv( $output, [ $item['url'], $item['type'] ] );
+		Equalify_Wp_Integration_URLs::stream_all(
+			$include_pdfs,
+			function ( $item ) use ( $output, $disabled_ids ) {
+				if ( ! in_array( $item['post_id'], $disabled_ids, true ) ) {
+					fputcsv( $output, [ $item['url'], $item['type'] ] );
+				}
 			}
-		}
+		);
 
 		fclose( $output );
 		exit;
@@ -112,6 +122,12 @@ class Equalify_Wp_Integration_Public {
 	 * @return   string
 	 */
 	public static function get_feed_url() {
-		return add_query_arg( 'equalify_csv', '1', home_url( '/' ) );
+		return add_query_arg(
+			[
+				'equalify_csv'   => '1',
+				'equalify_token' => get_option( 'equalify_csv_token', '' ),
+			],
+			home_url( '/' )
+		);
 	}
 }

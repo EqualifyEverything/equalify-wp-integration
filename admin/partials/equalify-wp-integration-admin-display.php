@@ -6,9 +6,8 @@
  *   $logo_url      (string)  — absolute URL to logo.svg
  *   $feed_url      (string)  — public CSV feed URL
  *   $include_pdfs  (bool)    — whether PDF media library files are included
- *   $all_urls      (array)   — all site URLs with 'url' and 'type' keys
- *   $disabled_urls (array)   — URLs currently excluded from the feed
- *   $page_urls     (array)   — subset of $all_urls for the current page
+ *   $disabled_ids  (array)   — post IDs currently excluded from the feed
+ *   $page_urls     (array)   — URLs for the current page
  *   $search        (string)  — current search query (empty string if none)
  *   $current_page  (int)
  *   $total_pages   (int)
@@ -115,7 +114,7 @@
 		</div>
 	</form>
 
-	<?php if ( empty( $all_urls ) ) : ?>
+	<?php if ( $total === 0 ) : ?>
 		<p><?php esc_html_e( 'No published URLs found on this site.', 'equalify-wp-integration' ); ?></p>
 	<?php else : ?>
 
@@ -130,7 +129,7 @@
 			</thead>
 			<tbody>
 				<?php foreach ( $page_urls as $item ) :
-					$is_disabled = in_array( $item['url'], $disabled_urls, true );
+					$is_disabled = in_array( $item['post_id'], $disabled_ids, true );
 				?>
 				<tr>
 					<td style="word-break:break-all;">
@@ -150,7 +149,7 @@
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 							<?php wp_nonce_field( 'equalify_toggle_url' ); ?>
 							<input type="hidden" name="action" value="equalify_toggle_url" />
-							<input type="hidden" name="url" value="<?php echo esc_attr( $item['url'] ); ?>" />
+							<input type="hidden" name="post_id" value="<?php echo esc_attr( $item['post_id'] ); ?>" />
 							<input type="hidden" name="toggle_action" value="<?php echo $is_disabled ? 'enable' : 'disable'; ?>" />
 							<input type="hidden" name="paged" value="<?php echo esc_attr( $current_page ); ?>" />
 							<input type="hidden" name="s" value="<?php echo esc_attr( $search ); ?>" />

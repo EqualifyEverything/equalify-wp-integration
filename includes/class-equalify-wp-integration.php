@@ -78,6 +78,7 @@ class Equalify_Wp_Integration {
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+		$this->define_cache_hooks();
 
 	}
 
@@ -178,11 +179,27 @@ class Equalify_Wp_Integration {
 
 		$plugin_public = new Equalify_Wp_Integration_Public( $this->get_plugin_name(), $this->get_version() );
 
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		$this->loader->add_filter( 'query_vars', $plugin_public, 'register_query_var' );
 		$this->loader->add_action( 'template_redirect', $plugin_public, 'maybe_output_csv' );
 
+	}
+
+	/**
+	 * Register hooks that invalidate the URL cache when content changes.
+	 *
+	 * Uses add_action directly (rather than the loader) because the callbacks
+	 * are static methods — the loader pattern is designed for object instances.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function define_cache_hooks() {
+		// Any post saved, updated, trashed, or status-changed.
+		add_action( 'save_post',    [ 'Equalify_Wp_Integration_URLs', 'flush_cache' ] );
+		// Any post permanently deleted (fires after the row is removed).
+		add_action( 'deleted_post', [ 'Equalify_Wp_Integration_URLs', 'flush_cache' ] );
+		// The PDF include toggle changed — affects which URLs appear in the feed.
+		add_action( 'update_option_equalify_include_pdfs', [ 'Equalify_Wp_Integration_URLs', 'flush_cache' ] );
 	}
 
 	/**
