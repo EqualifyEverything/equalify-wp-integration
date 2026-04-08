@@ -16,11 +16,15 @@ Equalify WordPress Integration generates a public CSV feed of all URLs on your W
 
 **Features:**
 
-- Public CSV feed endpoint at `/?equalify_csv=1`, ready to paste directly into Equalify.
-- Admin settings page under **Settings > Equalify Integration** with a one-click copy-to-clipboard button for the feed URL.
-- Paged table of every URL in the feed, showing its type (`html` or `pdf`) and enabled/disabled status.
+- Public CSV feed endpoint, protected by a secret token generated on activation.
+- Admin settings page under **Settings > Equalify Integration** with a one-click copy-to-clipboard button for the feed URL (token included).
+- Paged table of every URL in the feed with search, showing its type (`html` or `pdf`) and enabled/disabled status.
 - Per-URL enable/disable toggle — exclude specific pages or files from the feed without deleting them.
 - Optional inclusion of direct PDF file URLs from the WordPress media library, controlled by a toggle in the Options section.
+- DB-level pagination — only the current page of URLs is loaded into memory at a time.
+- Streamed CSV output — posts are fetched in chunks and written directly to the response, keeping memory usage flat on large sites.
+- Object cache integration — count and fetch results are cached when an external object cache (Redis, Memcached) is available, with automatic invalidation whenever posts are saved, deleted, or the PDF option changes.
+- Multisite compatible — each subsite maintains its own independent feed, settings, and cache.
 
 **CSV format:**
 
@@ -43,7 +47,7 @@ https://example.com/wp-content/uploads/2026/01/document.pdf,pdf
 
 #### Where do I find the CSV feed URL?
 
-Go to **Settings > Equalify Integration** in the WordPress admin. The feed URL is displayed at the top of the page with a Copy to Clipboard button.
+Go to **Settings > Equalify Integration** in the WordPress admin. The feed URL — including the secret token — is displayed at the top of the page with a Copy to Clipboard button.
 
 #### What URLs are included in the feed?
 
@@ -62,6 +66,18 @@ No. The Disable/Enable toggle only controls whether a URL appears in the Equalif
 On the settings page, check the **Include direct file URLs of PDF files in the media library** option under the Options section and click **Save Options**.
 
 ## Changelog
+
+### 1.1.0 — 2026-04-08
+
+- Secret token generated on activation; required as a query parameter to access the CSV feed.
+- Disabled URLs now stored as post IDs rather than URL strings, preventing data loss on large sites and surviving permalink structure changes.
+- DB-level pagination replaces PHP-side slicing — only the visible page of URLs is loaded into memory.
+- CSV endpoint streams posts in 200-item chunks rather than loading all posts at once.
+- Object cache integration: results are cached when Redis or Memcached is available, with invalidation on post save/delete and option change.
+- URL table now includes a search box; heading shows match count alongside total.
+- Pagination gains First and Last buttons.
+- Plugin CSS and JS now load only on the Equalify Integration settings screen.
+- Multisite: plugin options and cache are scoped per subsite; uninstall cleans up all subsites.
 
 ### 1.0.0
 
