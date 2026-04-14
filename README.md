@@ -67,7 +67,7 @@ On the settings page, check the **Include direct file URLs of PDF files in the m
 
 ## Changelog
 
-### 1.1.0 — 2026-04-08
+### 1.0.0 — 2026-04-08
 
 - Secret token generated on activation; required as a query parameter to access the CSV feed.
 - Disabled URLs now stored as post IDs rather than URL strings, preventing data loss on large sites and surviving permalink structure changes.
@@ -79,7 +79,7 @@ On the settings page, check the **Include direct file URLs of PDF files in the m
 - Plugin CSS and JS now load only on the Equalify Integration settings screen.
 - Multisite: each subsite gets its own token on network activation and when new sites are created; plugin options and cache are scoped per subsite; uninstall cleans up all subsites.
 
-### 1.0.0
+### 0.9.0
 
 - Initial release.
 - Public CSV feed endpoint at `/?equalify_csv=1`.
